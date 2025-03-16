@@ -20,9 +20,10 @@ fgbg = cv2.createBackgroundSubtractorMOG2(history=500, varThreshold=16, detectSh
 rage_level = 0
 max_rage = 100
 motion_timeout = 10  # If still for 10s, assume you've left
+text_display_time = 7  # Display message 3 seconds before stopping
 last_motion_time = time.time()
 recording_active = False
-away_from_screen = False  # If no motion for too long, this flips
+away_from_screen = False  
 
 print("Gamer Rage Detector started. Press 'q' to exit.")
 
@@ -63,22 +64,20 @@ while True:
             print("Movement detected! Recording started.")
 
     else:
-        if time.time() - last_motion_time > motion_timeout:
+        time_since_last_motion = time.time() - last_motion_time
+
+        # Show "Poor guy needed a break" at 7s of no motion
+        if text_display_time <= time_since_last_motion < motion_timeout:
+            away_from_screen = True
+            print("Poor guy needed a break.")
+
+        # Stop recording at 10s of no motion
+        if time_since_last_motion >= motion_timeout:
             rage_level = max(0, rage_level - 5)
+            if recording_active:
+                print("No movement detected. Stopping recording.")
+                recording_active = False
             
-            
-            if not away_from_screen:
-                
-                away_from_screen = True
-                print("Poor guy needed a break.")
-
-                if recording_active:
-                    print("No movement detected. Stopping recording.")
-                    recording_active = False
-
-            
-                        
-           
     # Rage expressions
     if rage_level < 25:
         rage_expression = "?"
@@ -101,11 +100,10 @@ while True:
     cv2.putText(frame, timestamp, (10, frame_height - 10),
                 cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 1)
 
-    # If AFK too long, display "Poor guy needed a break" in red, centered
+    # Show "Poor guy needed a break" in red at 7 seconds of no motion
     if away_from_screen:
-        
         text = "Poor guy needed a break"
-        font_scale = min(frame_width, frame_height) / 700  # Adjust size dynamically
+        font_scale = min(frame_width, frame_height) / 700
         text_size = cv2.getTextSize(text, cv2.FONT_HERSHEY_SIMPLEX, font_scale, 3)[0]
         text_x = (frame_width - text_size[0]) // 2
         text_y = (frame_height // 2)  
